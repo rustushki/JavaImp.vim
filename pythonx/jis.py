@@ -21,6 +21,7 @@ class Sorter:
         self._staticFirst = int(vim.eval("g:JavaImpStaticImportsFirst"))
         self._spacesAfterGroups = int(vim.eval("g:JavaImpSpacesAfterGroups"))
         self._newLineAtEnd = int(vim.eval("g:JavaImpNewLineAtEnd"))
+        self._sortLongerSecond = int(vim.eval("g:JavaImpSortLongerSecond"))
 
         # Initialize Import Statement Range
         self._rangeStart = -1
@@ -77,13 +78,31 @@ class Sorter:
 
         return fullySortedImportStatements
 
+    
     # Sort the provided importStatements first by the provided importRegexList, then
     # alphanumerically.
     def _regexSort(self, importStatements, importRegexList):
         regexSortedList = list()
 
+        #put longer imports after shorter imports
+        def sortLongestSecond(first, second):
+            if second.startswith(first[:-1]):
+                return -1
+            if first.startswith(second[:-1]):
+                return 1
+            elif second < first:
+                return 1
+            elif first < second:
+                return -1
+            else:
+                return 0
+
         # First sort the list alphanumerically.
-        importStatements.sort()
+        # Sort with custom comparator
+        if self._sortLongerSecond:
+            importStatements.sort(sortLongestSecond)
+        else:
+            importStatements.sort()
 
         # If the regex list is non-empty
         if len(importRegexList) > 0:
@@ -103,6 +122,8 @@ class Sorter:
             regexSortedList = importStatements
 
         return regexSortedList
+
+
 
     # Given a list of import statements, divide it into top, static and normal
     # imports.
@@ -265,7 +286,7 @@ class Sorter:
         # Insert Spacing into Middle Import List.
         spacedList  = self._insertSpacing(fullySortedImportStatements, self._depth)
 
-        startLine = self._rangeStart
+        startLine = self._rangeStart - 1
 
         startLine = self._insertListAtLine(startLine, spacedList)
 
