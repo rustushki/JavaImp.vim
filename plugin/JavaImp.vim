@@ -234,6 +234,11 @@ function! <SID>JavaImpAppendClass(cpath, relativeTo)
             call <SID>JavaImpAppendClass(l:jar, a:relativeTo)
         endfor
 
+        let l:jmplstList = glob(a:cpath . "/**/*.jmplst", 1, 1)
+        for l:jmplst in l:jmplstList
+            call <SID>JavaImpAppendClass(l:jmplst, a:relativeTo)
+        endfor
+
     elseif (match(a:cpath, '\(\.jar$\)') > -1)
         " Check if the jar file exists, if not, we return immediately.
         if (!filereadable(a:cpath))
