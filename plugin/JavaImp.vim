@@ -700,7 +700,13 @@ endfunction
 
 " Sort the import statements in the current file.
 function! <SID>JavaImpSort()
-	execute "pyfile " . s:pluginHome . "/pythonx/jis.py"
+    if has('python3')
+    	execute "py3file " . s:pluginHome . "/pythonx/jis.py"
+    elseif has('python')
+    	execute "pyfile " . s:pluginHome . "/pythonx/jis.py"
+    else
+        echom 'Sorting failed: No python support'
+    endif
 endfunction
 
 " Place Sorted Static Imports either before or after the normal imports
