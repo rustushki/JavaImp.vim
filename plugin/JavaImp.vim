@@ -116,6 +116,17 @@ function! <SID>JavaImpGenerate()
     if (<SID>JavaImpChkEnv() != 0)
         return
     endif
+
+    if has('python3')
+		python3 from class_map_generator import PortedClassMapGenerator
+		python3 pathSep = vim.eval("g:JavaImpPathSep")
+		python3 importPaths = vim.eval("g:JavaImpPaths")
+		python3 dataDir = vim.eval("g:JavaImpDataDir")
+		python3 jarCache = vim.eval("g:JavaImpJarCache")
+		python3 class_map_generator = PortedClassMapGenerator(pathSep, importPaths, dataDir, jarCache)
+		return
+    endif
+
     " We would like to save the current buffer first:
     if expand("%") != '' 
         update
@@ -138,9 +149,13 @@ function! <SID>JavaImpGenerate()
 		let sepIdx = stridx(currPaths, g:JavaImpPathSep)
         let currPath = strpart(currPaths, 0, sepIdx)
 
-		" Uncertain what this is doing.
-		" currPath is the same before and after.
-        let pkgDepth = substitute(currPath, '^.*{\(\d\+\)}.*$', '\1', '')
+		" Let a path be defined as a directory path, followed by an optional package depth, followed by optional
+		" disergarded junk
+
+		" The optional package depth is formatted as an integer surrounded by curly braces
+		let pkgDepth = substitute(currPath, '^.*{\(\d\+\)}.*$', '\1', '')
+
+		" The path is everything up to the optional package depth OR end of string if no optional package depth
         let currPath = substitute(currPath, '^\(.*\){.*}.*', '\1', '')
 
         let headStr = ""
@@ -1162,3 +1177,15 @@ function! <SID>JavaImpGetSubPkg(importStr,depth)
     " echo a:depth.' gives us '.lastPkg
     return lastPkg
 endfunction
+
+" Add JavaImp's Python3 classes to Python3's path if Python3 is available
+function! <SID>JavaImpInitializePython3()
+    if has('python3')
+		python3 import sys
+		python3 import vim
+		python3 import pathlib
+		python3 sys.path.insert(0, str(pathlib.Path(vim.eval('s:pluginHome')) / 'python3'))
+	endif
+endfunction
+
+call <SID>JavaImpInitializePython3()

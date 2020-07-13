@@ -209,44 +209,24 @@ or put this in your .vimrc
 After you have done so, you can open a .java file and use ^P and ^N to
 autocomplete your Java class names.
 
-Importing your JDK Classes
+Statically Indexing Classes via 'jmplst'
 --------------------------
-JavaImp also support a file type called "jmplst".  A jmplst file essentially
-contains the output of a "jar tf" command.  It is mainly used in the case where
-you want to import some external classes in JavaImp but you do not have the
-source directory nor the jar file.  For example, you can import the JDK
-classes, which can be located in $JAVA_HOME/src.jar (different in different
-distributions) with your JDK distribution, by using the jmplst file:
+JavaImp also supports a file type called `jmplst` which contains the output of
+the `jar tf` command. These jmplst files are used when it is necessary to import
+external classes but their source directory nor their jar file are available.
 
-To expose the standard JDK classes to JavaImp:
+For example, the JDK classes can be imported statically as follows:
 
-1. Generate your jmplst file.
+1. Generate `jmplst` file
 
-        # If you have "sed":
-        $ jar tf $JAVA_HOME/src.jar | sed -e 's#^src/##' > jdk.jmplst
-        
-        # If you do not have "sed":
-        $ jar tf $JAVA_HOME/src.jar > jdk.jmplst
-        $ vim jdk.jmplst
+        $ jar tf $JAVA_HOME/src.zip | sed -e 's#^src/##' > jdk.jmplst
 
-        # Execute the following vim commands:
-        1G0<C-v>G3ld:w
+2. Put jdk.jmplst in a directory referenced by `g:JavaImpPaths`
 
-    This will select vertically the all the "src/" prefixes and delete them, then
-    save the file. Essentially, we want to get rid of the src directory otherwise
-    it'll screw up the import statements.
+3. Run `:JIG` in vim and observe that the JDK classes are imported
 
-2. Put the jdk.jmplst in a directory that you've added in your g:JavaImpPaths.
-For example, I put my jdk.jmplst in $HOME/vim/JavaImp/jmplst directory, and add
-$HOME/vim/JavaImp/jmplst to g:JavaImpPaths.
-
-3. Open vim with the JavaImp.vim loaded and Do a :JIG.  You should see that
-JavaImp will pick up many more classes.
-
-4. Try to do a :JI on a "Vector" class, for example, to see whether you can add
-the import statement from the JDK.
-
-Enjoy!
+4. To Test: Run `:JI` on a `Vector` class, for example, and observe the addition
+   of an import statement
 
 History
 -------
