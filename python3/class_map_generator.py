@@ -93,6 +93,6 @@ class PortedClassMapGenerator:
 
     def _findCachedJar(self, jarToCheckPath):
         cachedJarFileName = str(jarToCheckPath)
-        cachedJarFileName = re.sub('[ :\\/]', '_', cachedJarFileName)
+        cachedJarFileName = re.sub('[ :\\\/]', '_', cachedJarFileName)
         cachedJarFileName = re.sub('jar$', 'jmplst', cachedJarFileName)
         return pathlib.Path(self._jarCache) / cachedJarFileName
