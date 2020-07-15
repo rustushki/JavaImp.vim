@@ -24,7 +24,7 @@ class PortedClassMapGenerator:
             qualifiedClassName = re.sub("^[\\\/]", "", pathToJavaClassString)
 
             # Slashes and Dollars to Dots
-            qualifiedClassName = re.sub("\/|\$", ".", qualifiedClassName)
+            qualifiedClassName = re.sub("[\\\/]|\$", ".", qualifiedClassName)
 
             className = re.sub("\$", ".", match.group(1))
             formattedClassEntry = className + ' ' + qualifiedClassName
@@ -88,7 +88,7 @@ class PortedClassMapGenerator:
         filePathString = filePathString.strip()
         if filePathString.lower().endswith((".java", ".class")):
             filePathStringSansExtension = re.sub("\.class|\.java", "", filePathString)
-            filePathStringSansParentDirectories = re.sub(packageRootPath, "", filePathStringSansExtension)
+            filePathStringSansParentDirectories = filePathStringSansExtension.replace(packageRootPath, "")
             formattedClassEntrySet.add(self._formatClassEntry(filePathStringSansParentDirectories))
 
     def _findCachedJar(self, jarToCheckPath):
