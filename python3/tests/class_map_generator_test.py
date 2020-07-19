@@ -1,7 +1,5 @@
 import pathlib
 import requests
-import subprocess
-import sys
 import tarfile
 import unittest
 import zipfile
@@ -39,70 +37,42 @@ class PortedClassMapGeneratorTest(unittest.TestCase):
         workspaceDirectory.rmdir()
 
     def test_import_java_sources(self):
-        self.__addGuavaToWorkspaceSource()
-
         # Generate class map for Guava v20 (from source files)
+        self.__addGuavaToWorkspaceSource()
         importPaths = self.PATH_SEPARATOR.join([
             self.IMPORT_DIRECTORY + "guava-20.0/guava-testlib/src",
             self.IMPORT_DIRECTORY + "guava-20.0/guava/src",
             self.IMPORT_DIRECTORY + "guava-20.0/guava-gwt/src"
         ])
-        class_map_generator = PortedClassMapGenerator(self.PATH_SEPARATOR, importPaths, self.DATA_DIRECTORY,
-                self.JAR_CACHE)
+        PortedClassMapGenerator(self.PATH_SEPARATOR, importPaths, self.DATA_DIRECTORY, self.JAR_CACHE)
 
-        # Verify that JavaImp.txt is created
-        javaImpTxtFile = pathlib.Path(self.DATA_DIRECTORY) / "JavaImp.txt"
-        self.assertTrue(javaImpTxtFile.exists())
-
-        # Verify the count of importable classes in the library
-        javaImpTxtFileContents = javaImpTxtFile.read_text()
-        javaImpTxtFileLines = javaImpTxtFileContents.split("\n")
-        self.assertEqual(len(javaImpTxtFileLines), 845)
-
-        # Verify that the lines in JavaImp.txt are sorted
-        javaImpTxtFileSortedLines = sorted(javaImpTxtFileLines)
-        linesInSameOrder = True
-        for i in (0, len(javaImpTxtFileLines) - 1):
-            if javaImpTxtFileLines[i] != javaImpTxtFileSortedLines[i]:
-                linesInSameOrder = False
-                break
-        self.assertTrue(linesInSameOrder)
+        self.assertTrue(self.__importFileExists())
+        self.assertEqual(self.__importFileCountLines(), 845)
+        self.assertTrue(self.__importFileIsSorted())
 
     def test_import_java_classes(self):
-        self.__addGuavaToWorkspaceClasses()
-
         # Generate class map for Guava v20 (from class files)
+        self.__addGuavaToWorkspaceClasses()
         importPaths = self.PATH_SEPARATOR.join([
             self.IMPORT_DIRECTORY + "classes"
         ])
-        class_map_generator = PortedClassMapGenerator(self.PATH_SEPARATOR, importPaths, self.DATA_DIRECTORY,
-                self.JAR_CACHE)
+        PortedClassMapGenerator(self.PATH_SEPARATOR, importPaths, self.DATA_DIRECTORY, self.JAR_CACHE)
 
-        # Verify that JavaImp.txt is created
-        javaImpTxtFile = pathlib.Path(self.DATA_DIRECTORY) / "JavaImp.txt"
-        self.assertTrue(javaImpTxtFile.exists())
+        self.assertTrue(self.__importFileExists())
+        self.assertEqual(self.__importFileCountLines(), 2502)
+        self.assertTrue(self.__importFileIsSorted())
 
-        # Verify the count of importable classes in the library
-        javaImpTxtFileContents = javaImpTxtFile.read_text()
-        javaImpTxtFileLines = javaImpTxtFileContents.split("\n")
-        self.assertEqual(len(javaImpTxtFileLines), 2502)
+    def test_import_jar(self):
+        # Generate class map for Guava v20 (from jar files)
+        self.__addGuavaToWorkspaceJars()
+        importPaths = self.PATH_SEPARATOR.join([
+            self.IMPORT_DIRECTORY
+        ])
+        PortedClassMapGenerator(self.PATH_SEPARATOR, importPaths, self.DATA_DIRECTORY, self.JAR_CACHE)
 
-        # Verify that the lines in JavaImp.txt are sorted
-        javaImpTxtFileSortedLines = sorted(javaImpTxtFileLines)
-        linesInSameOrder = True
-        for i in (0, len(javaImpTxtFileLines) - 1):
-            if javaImpTxtFileLines[i] != javaImpTxtFileSortedLines[i]:
-                linesInSameOrder = False
-                break
-        self.assertTrue(linesInSameOrder)
-
-    def __buildMavenPackage(self, directory):
-        completedProcess = subprocess.run(["mvn", "-Dmaven.test.skip=true", "clean", "package"], cwd=directory)
-
-        if completedProcess.returncode != 0:
-            print("Error running the mvn command: " + " ".join(completedProcess.args))
-            sys.exit()
-            
+        self.assertTrue(self.__importFileExists())
+        self.assertEqual(self.__importFileCountLines(), 2502)
+        self.assertTrue(self.__importFileIsSorted())
 
     def __addGuavaToWorkspaceSource(self):
         # Download and extract source code for Guava v20
@@ -111,6 +81,11 @@ class PortedClassMapGeneratorTest(unittest.TestCase):
         self.__downloadFile(localFilename, remoteFilename)
         javaLibraryTar = tarfile.open(localFilename)
         javaLibraryTar.extractall(self.IMPORT_DIRECTORY)
+
+    def __addGuavaToWorkspaceJars(self):
+        remoteFolder = 'https://github.com/google/guava/releases/download/v20.0/'
+        for fileName in ['guava-20.0.jar', 'guava-gwt-20.0.jar', 'guava-testlib-20.0.jar']:
+            self.__downloadFile(self.IMPORT_DIRECTORY + fileName, remoteFolder + fileName)
 
     def __addGuavaToWorkspaceClasses(self):
         remoteFolder = 'https://github.com/google/guava/releases/download/v20.0/'
@@ -128,3 +103,27 @@ class PortedClassMapGeneratorTest(unittest.TestCase):
             with open(localFilename, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192): 
                     f.write(chunk)
+
+    def __importFileBuildFile(self):
+        return pathlib.Path(self.DATA_DIRECTORY) / "JavaImp.txt"
+
+    def __importFileExists(self):
+        return self.__importFileBuildFile().exists()
+
+    def __importFileGetLines(self):
+        javaImpTxtFile = self.__importFileBuildFile()
+        javaImpTxtFileContents = javaImpTxtFile.read_text()
+        return javaImpTxtFileContents.split("\n")
+
+    def __importFileCountLines(self):
+        return len(self.__importFileGetLines())
+
+    def __importFileIsSorted(self):
+        javaImpTxtFileLines = self.__importFileGetLines()
+        javaImpTxtFileSortedLines = sorted(javaImpTxtFileLines)
+        linesInSameOrder = True
+        for i in (len(javaImpTxtFileLines) - 1, 0):
+            if javaImpTxtFileLines[i] != javaImpTxtFileSortedLines[i]:
+                linesInSameOrder = False
+                break
+        return linesInSameOrder
