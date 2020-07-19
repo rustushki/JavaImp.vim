@@ -74,10 +74,20 @@ class PortedClassMapGeneratorTest(unittest.TestCase):
         self.assertEqual(self.__importFileCountLines(), 2502)
         self.assertTrue(self.__importFileIsSorted())
 
+    def test_import_java_jmplst(self):
+        # Generate class map for Guava v20 (from jmplst files)
+        self.__addGuavaToWorkspaceJmplst()
+        importPaths = self.IMPORT_DIRECTORY
+        PortedClassMapGenerator(self.PATH_SEPARATOR, importPaths, self.DATA_DIRECTORY, self.JAR_CACHE)
+
+        self.assertTrue(self.__importFileExists())
+        self.assertEqual(self.__importFileCountLines(), 2502)
+        self.assertTrue(self.__importFileIsSorted())
+
     def __addGuavaToWorkspaceSource(self):
         # Download and extract source code for Guava v20
         localFilename = self.WORKSPACE_DIRECTORY + 'v20.0.tar.gz'
-        remoteFilename = 'https://github.com/google/guava/archive/v20.0.tar.gz' 
+        remoteFilename = 'https://github.com/google/guava/archive/v20.0.tar.gz'
         self.__downloadFile(localFilename, remoteFilename)
         javaLibraryTar = tarfile.open(localFilename)
         javaLibraryTar.extractall(self.IMPORT_DIRECTORY)
@@ -90,9 +100,23 @@ class PortedClassMapGeneratorTest(unittest.TestCase):
     def __addGuavaToWorkspaceClasses(self):
         remoteFolder = 'https://github.com/google/guava/releases/download/v20.0/'
         for fileName in ['guava-20.0.jar', 'guava-gwt-20.0.jar', 'guava-testlib-20.0.jar']:
-            self.__downloadAndExtractJar(self.WORKSPACE_DIRECTORY + fileName, remoteFolder + fileName)
+            self.__downloadJarAndExtract(self.WORKSPACE_DIRECTORY + fileName, remoteFolder + fileName)
 
-    def __downloadAndExtractJar(self, localFilename, remoteFilename):
+    def __addGuavaToWorkspaceJmplst(self):
+        remoteFolder = 'https://github.com/google/guava/releases/download/v20.0/'
+        for fileName in ['guava-20.0.jar', 'guava-gwt-20.0.jar', 'guava-testlib-20.0.jar']:
+            self.__downloadJarAsJmplst(self.IMPORT_DIRECTORY + fileName, remoteFolder + fileName)
+
+    def __downloadJarAsJmplst(self, localFilename, remoteFilename):
+        self.__downloadFile(localFilename, remoteFilename)
+        with zipfile.ZipFile(localFilename) as jarFile:
+            with open(localFilename + ".jmplst", mode = 'w') as jmplst:
+                for line in jarFile.namelist():
+                    print(line, file = jmplst);
+
+        pathlib.Path(localFilename).unlink()
+
+    def __downloadJarAndExtract(self, localFilename, remoteFilename):
         self.__downloadFile(localFilename, remoteFilename)
         with zipfile.ZipFile(localFilename) as jarFile:
             jarFile.extractall(self.IMPORT_DIRECTORY + "classes")
@@ -101,7 +125,7 @@ class PortedClassMapGeneratorTest(unittest.TestCase):
         with requests.get(remoteFilename) as r:
             r.raise_for_status()
             with open(localFilename, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192): 
+                for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
     def __importFileBuildFile(self):
